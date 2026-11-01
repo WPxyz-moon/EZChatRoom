@@ -21,6 +21,7 @@ namespace codec{
         return out;
     }
 
+    //返回false代表缓冲区数据失效，需要断开连接
     bool parse(string& buffer,vector<Package>& out){
         while(buffer.size() >= PACK_HEADER_SIZE){
 
