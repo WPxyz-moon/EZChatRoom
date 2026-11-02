@@ -14,11 +14,11 @@ void EventLoop::loop(){
 
         for(int i = 0; i < n; ++i ){
             EventHandler* handler = static_cast<EventHandler*>(evts[i].data.ptr);
-            if((evts[i].events & (EPOLLHUP | EPOLLERR)) && !handler->handleError()){
+            if((evts[i].events & EPOLLERR) && !handler->handleError()){
                 removeHandler(handler);             //去除了就不能再访问了
                 continue;
             }
-            if((evts[i].events & EPOLLIN) && !handler->handleRead()){
+            if((evts[i].events & (EPOLLHUP | EPOLLIN) ) && !handler->handleRead()){
                 removeHandler(handler);
                 continue;
             }
@@ -28,7 +28,7 @@ void EventLoop::loop(){
             }
         }
 
-        deltePendings();
+        deletePendings();
     }
 }
 
@@ -91,4 +91,5 @@ void EventLoop::removeHandler(EventHandler* handler){
     }
     handlers_.erase(it);
     handler->onRemoved();
+    pendingDelHandlers_.insert(handler);
 }

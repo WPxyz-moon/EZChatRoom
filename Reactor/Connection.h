@@ -8,7 +8,8 @@
 
 //负责管理连接fd的释放，即RAII
 //同时负责解决TCP粘包问题.
-class ChatRoom;
+class EventLoop; 
+class ChatRoom; 
 class Connection : public EventHandler
 {
 private:
@@ -16,16 +17,17 @@ private:
     string writeBuffer_;
     InetAddr addr_;
     string cliname_;
-    ChatRoom* room_;                //用于事件触发时 在ChatRomm设置/取消监视。
+    ChatRoom* room_;            //用于通知room删除监视信息/通知room解析Package
 public:
-    Connection(int fd,const InetAddr& addr) :EventHandler(fd),addr_(addr){
-        cout << addr_.address() << "建立连接成功" << endl;
+    Connection(int fd,const InetAddr& addr,EventLoop* loop) :
+    EventHandler(fd,loop),addr_(addr){
+        cout << addr_.strIpPort() << "建立连接成功" << endl;
     }
     ~Connection(){
         if(fd_ >= 0){
             close(fd_);
             fd_ = -1;
-            cout << addr_.address() << "断开连接" << endl;
+            cout << addr_.strIpPort() << "断开连接" << endl;
         }
     }
     
@@ -36,8 +38,8 @@ public:
     Connection& operator=(Connection&&) = delete;
 
     //返回false表示连接失效，功能是EPOLLIN触发的时候转为packages
-    bool handleRead(vector<Package>& packages) override;
-    int getFd() const override { return fd_;}
+    bool handleRead() override;
+    bool handleWrite() override;
     bool send(const Package& pack);
     
 };

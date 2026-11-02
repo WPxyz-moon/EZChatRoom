@@ -14,7 +14,7 @@ private:
     static constexpr int IPV4_MAXSIZE = 16;
     sockaddr_in sin_;
 public:
-    string address() const{ 
+    string strIpPort() const{ 
         return ip() + ":" + to_string(port());
     }
     string ip() const {
@@ -28,6 +28,9 @@ public:
     uint16_t port() const{
         return ntohs(sin_.sin_port); 
     }
+
+    sockaddr* data(){ return reinterpret_cast<sockaddr*>(&sin_);}
+    socklen_t len(){ return sizeof(sin_);}
 
     //需要自行确保传入的是有效IPv4值
     InetAddr(std::string ip,uint16_t port){

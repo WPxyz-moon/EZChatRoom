@@ -2,12 +2,12 @@
 #include "Package.h"
 #include <vector>
 
+class EventLoop;
 class EventHandler
 {
 public:
     virtual int getFd() const {return fd_;}
-    virtual bool handleRead() {return true;}
-    virtual bool handleRead(vector<Package>& packges) {return true;};              //要监听的fd基本都有读事件
+    virtual bool handleRead() = 0;
     virtual bool handleWrite() {return true;}   //写只有Connection写才有
     virtual bool handleError() {return false;}  //默认遇到错误返回false，让Epoll准备注销fd
     virtual void onRemoved() {}
@@ -18,6 +18,7 @@ public:
         }
     }
 protected:
-    EventHandler(int fd) : fd_(fd) {}
+    EventHandler(int fd,EventLoop* loop) : fd_(fd),loop_(loop){}
     int fd_;
+    EventLoop* loop_;       //用loop更新监听的事件
 };
