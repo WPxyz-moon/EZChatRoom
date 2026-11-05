@@ -13,8 +13,7 @@ enum class PackType : uint16_t {
     LOGIN_ACK          = 0x0102,   // S→C 登录结果
 
     // ===== 0x02 段：聊天消息 =====
-    MESSAGE            = 0x0201,   // C→S 发消息
-    MESSAGE_BROADCAST  = 0x0202,   // S→C 广播（可和 MESSAGE 共用 body）
+    MESSAGE            = 0x0201,   // C<=>S 互相发消息（target为空代表本次为广播消息）
 
     // ===== 0x03 段：文件上传 =====
     FILE_UPLOAD_META        = 0x0301,  // C→S 文件元信息
@@ -38,14 +37,18 @@ struct PackHeader
 {
     uint32_t magic_;         //用于标识包开头
     uint32_t bodyLen_;
-    uint32_t seq_;           //用于标识包的顺序（客户端递增，服务器按原值回应）
     uint16_t type_;          //业务需要时再类型转化
 };
 #pragma pack(pop)
-static_assert(sizeof(PackHeader) == 14,"sizeof PackHeader must be 14");
+static_assert(sizeof(PackHeader) == 10,"sizeof PackHeader must be 10");
 
 struct Package{
-    uint32_t seq_ = 0;
     PackType type_ = PackType::MESSAGE;
     string body_;
+
+    Package() = default;
+    Package(PackType type,const string& body){
+        type_ = type;
+        body_ = body;
+    }
 };

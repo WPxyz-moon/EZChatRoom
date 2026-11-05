@@ -18,10 +18,12 @@ void EventLoop::loop(){
                 removeHandler(handler);             //去除了就不能再访问了
                 continue;
             }
+
             if((evts[i].events & (EPOLLHUP | EPOLLIN) ) && !handler->handleRead()){
                 removeHandler(handler);
                 continue;
             }
+            
             if((evts[i].events & EPOLLOUT) && !handler->handleWrite()){
                 removeHandler(handler);
                 continue;

@@ -115,16 +115,16 @@ bool decodeLoginAck(const std::string& body, LoginAck& out) {
 // ===== 聊天 =====
 std::string encodeMessage(const Message& msg) {
     std::string body;
-    putU64(body, msg.time_);
-    putStr16(body, msg.cliName_);
+    putU64(body, msg.time);
+    putStr16(body, msg.cliName);
     putStr16(body, msg.text);
     return body;
 }
 
 bool decodeMessage(const std::string& body, Message& out) {
     size_t off = 0;
-    if (!getU64(body, off, out.time_)) return false;
-    if (!getStr16(body, off, out.cliName_)) return false;
+    if (!getU64(body, off, out.time)) return false;
+    if (!getStr16(body, off, out.cliName)) return false;
     if (!getStr16(body, off, out.text)) return false;
     return true;
 }

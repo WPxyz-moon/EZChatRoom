@@ -73,6 +73,10 @@ public:
         return it == handlers_.end() ? 0 : it->second;
     }
 
+    bool isPendingToDelete(Connection* conn){
+        return pendingDelHandlers_.find(conn) != pendingDelHandlers_.end();
+    }
+
     EventLoop(){
         epfd_ = epoll_create1(0);
         if (epfd_ == -1) {

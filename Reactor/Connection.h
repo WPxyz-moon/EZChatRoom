@@ -41,6 +41,7 @@ public:
     bool handleRead() override;
     bool handleWrite() override;
     bool send(const Package& pack);
-    
+    string getName() const { return cliname_;}
+    void setName(const string& name) { cliname_ = name; }
 };
 

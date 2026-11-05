@@ -10,6 +10,9 @@
 
 //RAII,false代表连接失效了，需要上层解除监听并清除对象以断开
 bool Connection::handleRead(){
+    //没被移除监听才能解析，移除监听表示连接逻辑上已经死了,而且不用再删除了
+    if(loop_->isPendingToDelete(this)) return true;
+
     vector<Package> packages;
     if (fd_ < 0) return false; 
     ssize_t n = 1;
@@ -18,7 +21,6 @@ bool Connection::handleRead(){
         n = read(fd_,buf,sizeof(buf));
         if(n > 0){
             readBuffer_.append(buf,n);
-            if(n < static_cast<ssize_t>(sizeof(buf))) break;
         } else if(n == 0){
             return false;
         } else{
@@ -38,7 +40,7 @@ bool Connection::handleRead(){
         return false;
     }
     
-    room_->analysePackages(packages);
+    room_->analysePackages(this,packages);
     return true;
 }
 
@@ -50,6 +52,7 @@ bool Connection::send(const Package& pack) {
 
 // 把写缓冲区的东西发送出去(能直接发尽量直接发而不是监听)
 bool Connection::handleWrite() {
+    if(loop_->isPendingToDelete(this)) return true;
     ssize_t n = ::send(fd_, writeBuffer_.data(), writeBuffer_.size(), MSG_NOSIGNAL);
     //MSG_NOSIGNAL防对端残留信息导致进程奔溃
     if (n < 0) {
