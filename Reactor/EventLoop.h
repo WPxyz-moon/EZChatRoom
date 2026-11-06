@@ -19,11 +19,20 @@ private:
     //需要成员死去时，且room转移所有权给Loop延迟删除,避免函数内部删除自己。
     unordered_map<EventHandler*,uint32_t> handlers_;       
     unordered_set<EventHandlerptr> pendingDelHandlers_;
-    
+    bool quit_;
+
     static constexpr int MAX_EVENT_NUMS = 1024; 
 
 public:
     void loop();
+
+    // 请求退出：当前这批事件处理完后 loop() 返回，对象本身仍然有效。
+    // 只允许在回调栈内调用（不能从其他线程调用）。
+    void quit() { quit_ = true; }
+
+    // 停止循环并回收所有注册项：只从 epoll/注册表摘除，不回调 onRemoved。
+    // 供 owner（ChatRoom）析构时显式调用，保证业务对象在 Loop 之后析构。
+    void shutdown();
 
     void addHandler(EventHandler* handler,uint32_t events);
 
@@ -72,10 +81,10 @@ public:
     }
 
     void pendToKillHandler(EventHandlerptr ptr){
-        pendingDelHandlers_.insert(ptr);
+        pendingDelHandlers_.insert(std::move(ptr));   // unique_ptr 不可拷贝，必须 move
     }
 
-    EventLoop(){
+    EventLoop() : quit_(false) {
         epfd_ = epoll_create1(0);
         if (epfd_ == -1) {
             std::cout << "[WARN] epoll create fail" << std::endl;

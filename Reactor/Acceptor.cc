@@ -1,9 +1,14 @@
 #include "Acceptor.h"
 #include "EventLoop.h"
 #include "Connection.h"
-Acceptor::Acceptor(int fd,EventLoop* loop,std::string ip,uint16_t port):
+#include "ChatRoom.h"
+
+Acceptor::~Acceptor() = default;
+
+Acceptor::Acceptor(int fd,EventLoop* loop,std::string ip,uint16_t port,ChatRoom* room):
     EventHandler(fd,loop),
-    addr_(ip,port)
+    addr_(ip,port),
+    room_(room)
 {
     //运行快速重新绑定
     int opt = 1;
@@ -36,8 +41,9 @@ bool Acceptor::handleRead() {
             std::cout << "[WARN] connect failed, fd=" << fd_ << " errno=" << errno << "\n";
             return true;
         }
-        Connection* conn = new Connection(connfd,InetAddr(sin),loop_);
-        loop_->addHandler(conn,EPOLLIN);
+        auto conn = make_unique<Connection>(connfd,InetAddr(sin),loop_,room_);
+        loop_->addHandler(conn.get(),EPOLLIN);
+        room_->addConnection(std::move(conn));
     }
     return true;
 }

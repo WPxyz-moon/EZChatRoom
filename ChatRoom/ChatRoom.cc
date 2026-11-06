@@ -26,6 +26,18 @@ void ChatRoom::analysePackages(Connection* sender,const vector<Package>& package
             case PackType::MESSAGE:
                 handleMessage(sender,pack.body_);
                 break;
+            case PackType::FILE_UPLOAD_META:
+                fileManager_.onUploadMeta(sender, pack.body_);
+                break;
+            case PackType::FILE_UPLOAD_CHUNK:
+                fileManager_.onUploadChunk(sender, pack.body_);
+                break;
+            case PackType::FILE_UPLOAD_DONE:
+                fileManager_.onUploadDone(sender, pack.body_);
+                break;
+            case PackType::FILE_DOWNLOAD_REQ:
+                fileManager_.onDownloadReq(sender, pack.body_);
+                break;
             default:
                 break;
         }
@@ -99,8 +111,19 @@ void ChatRoom::handleMessage(Connection* sender, const string& body){
     }
 }
 
+void ChatRoom::addConnection(ConnectionPtr conn){
+    Connection* raw_ptr = conn.get();
+    clients_.emplace(raw_ptr, std::move(conn));
+}
+
+// 只应由 Connection::onRemoved() 调用（见 ChatRoom.h 中的生命周期契约）。
+// 业务层主动断开连接请走 loop_.removeHandler()。
 void ChatRoom::removeConnection(Connection* target) {
     if (!target) return;
+
+    // 先取消该连接的上传/下载会话：此时 Connection 还活着，
+    // 可以安全地清掉它身上的 onWritable 回调并关闭会话文件。
+    fileManager_.cancelConnection(target);
 
     //从在线名单中去掉
     const std::string& name = target->getName();
@@ -119,20 +142,64 @@ void ChatRoom::removeConnection(Connection* target) {
     
 }
 
+void ChatRoom::start(){
+    loop_.loop();
+}
+
 //room死时，让loop标记删除connection，
 ChatRoom::ChatRoom(string ip,uint16_t port):
     ser_addr_(ip,port)
 {   
-    int listenfd = socket(AF_INET,SOCK_STREAM,0);
+    // 必须非阻塞：Acceptor::handleRead 会循环 accept4 直到 EAGAIN，
+    // 阻塞的监听 fd 会在第二次 accept4 时把整个单线程 Loop 卡死。
+    int listenfd = socket(AF_INET,SOCK_STREAM | SOCK_NONBLOCK,0);
     if(listenfd == -1){
         cout << "listenfd create error";
         exit(-1);
     }
-    listener_ = make_unique<Acceptor>(listenfd,&loop_,ip,port);
+    listener_ = make_unique<Acceptor>(listenfd,&loop_,ip,port,this);
+
+    // 标准输入也注册进同一个 Loop；失败（如 stdin 不是可 poll 的 fd）只告警
+    keyboard_ = make_unique<KeyBoardHandler>(&loop_, this);
 }
 
-//析构时Loop_先死，会把所有注册的Handler注销，但是不影响他们的生命周期，然后
-//Ptr所有者Clients_会死，所有Connection对象就一起死了（所以Connection析构的时候无需释放资源,释放资源由Loop调控)
+// 析构顺序由本函数显式保证，不依赖成员声明顺序：
+// 1) fileManager_.cancelAll()：此时全部 Connection 仍然存活，
+//    可以安全地关闭传输会话、清掉 onWritable 回调；
+// 2) loop_.shutdown()：停止循环，把所有 Handler 从 epoll/注册表摘除，
+//    并回收延迟删除队列里已经移交所有权给 Loop 的 Connection；
+// 3) clients_.clear()：销毁仍由 Room 拥有的 Connection。
+// 顺序不能反：先 shutdown 会回收 Connection，FileManager 里的
+// Connection* 会话索引就会变成悬垂指针。
 ChatRoom::~ChatRoom(){
-    
+    fileManager_.cancelAll();
+    loop_.shutdown();
+    clients_.clear();
+}
+
+bool ChatRoom::kick(const string& name) {
+    auto it = onlineClients_.find(name);
+    if (it == onlineClients_.end()) return false;
+
+    Connection* conn = it->second;
+    // 走 Loop 注销，触发 onRemoved → removeConnection，对象由 Loop 延迟删除
+    loop_.removeHandler(conn);
+    return true;
+}
+
+void ChatRoom::broadcastFromServer(const string& text) {
+    Message msg{getCurrentTimeSeconds(), "server", text};
+    const string body = encodeMessage(msg);
+    for (auto& kv : onlineClients_) {
+        kv.second->send(Package(PackType::MESSAGE, body));
+    }
+}
+
+vector<string> ChatRoom::onlineNames() const {
+    vector<string> names;
+    names.reserve(onlineClients_.size());
+    for (const auto& kv : onlineClients_) {
+        names.push_back(kv.first);
+    }
+    return names;
 }

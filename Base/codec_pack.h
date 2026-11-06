@@ -1,3 +1,4 @@
+#pragma once
 #include "Package.h"
 #include <arpa/inet.h>
 #include <cstring>
@@ -6,7 +7,8 @@
 namespace codec {
 
 // ===== 线格式层：字节流 ↔ Package（含粘包/半包） =====
-std::string serialize(const Package& pkg) {
+// 定义写在头文件里，必须 inline，否则多个 TU 包含会重复定义
+inline std::string serialize(const Package& pkg) {
     std::string out;
     PackHeader pkh;
     pkh.magic_   = htonl(MAGICNUM);
@@ -22,7 +24,7 @@ std::string serialize(const Package& pkg) {
 }
 
 // 返回 false 代表缓冲区数据失效，需要断开连接
-bool parse(std::string& buffer, std::vector<Package>& out) {
+inline bool parse(std::string& buffer, std::vector<Package>& out) {
     size_t offset = 0;
     while (buffer.size() - offset >= PACK_HEADER_SIZE) {
         PackHeader pkheader;

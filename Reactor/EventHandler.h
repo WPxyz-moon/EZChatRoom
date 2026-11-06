@@ -1,6 +1,7 @@
 #pragma once
 #include "Package.h"
 #include <vector>
+#include <unistd.h>   // close()
 
 class EventLoop;
 class EventHandler

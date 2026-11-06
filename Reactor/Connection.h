@@ -2,8 +2,10 @@
 #include "InetAddr.h"
 #include "Package.h"
 #include "EventHandler.h"
+#include <functional>
 #include <string>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 
 //负责管理连接fd的释放，即RAII
@@ -18,18 +20,12 @@ private:
     InetAddr addr_;
     string cliname_;
     ChatRoom* room_;            //用于通知room删除监视信息/通知room解析Package
+    // 写缓冲排空后调用（下载泵用它继续灌数据）。回调内允许清空自身。
+    std::function<void()> onWritable_;
+    bool inWriteCallback_ = false;
 public:
-    Connection(int fd,const InetAddr& addr,EventLoop* loop) :
-    EventHandler(fd,loop),addr_(addr){
-        cout << addr_.strIpPort() << "建立连接成功" << endl;
-    }
-    ~Connection(){
-        if(fd_ >= 0){
-            close(fd_);
-            fd_ = -1;
-            cout << addr_.strIpPort() << "断开连接" << endl;
-        }
-    }
+    Connection(int fd,const InetAddr& addr,EventLoop* loop,ChatRoom* room);
+    ~Connection(){}
     
     // 禁止拷贝和移动
     Connection(const Connection&) = delete;
@@ -44,5 +40,9 @@ public:
     bool send(const Package& pack);
     string getName() const { return cliname_;}
     void setName(const string& name) { cliname_ = name; }
+
+    // 供文件下载做背压控制：已排队但还没发出去的字节数
+    size_t bufferedBytes() const { return writeBuffer_.size(); }
+    void setOnWritable(std::function<void()> cb) { onWritable_ = std::move(cb); }
 };
 

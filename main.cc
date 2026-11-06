@@ -1,7 +1,7 @@
 #include "EventLoop.h"
 #include "ChatRoom.h"
 int main(){
-    EventLoop loop;
-    ChatRoom room();
-
+    ChatRoom room("192.168.253.130",6767);
+    room.start();
+    return 0;
 }

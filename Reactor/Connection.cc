@@ -49,27 +49,41 @@ bool Connection::send(const Package& pack) {
 
 // 把写缓冲区的东西发送出去(能直接发尽量直接发而不是监听)
 bool Connection::handleWrite() {
-    ssize_t n = ::send(fd_, writeBuffer_.data(), writeBuffer_.size(), MSG_NOSIGNAL);
-    //MSG_NOSIGNAL防对端残留信息导致进程奔溃
-    if (n < 0) {
-        // 缓冲满
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            loop_->enableWrite(this);   
-            return true;
+    if (fd_ < 0) return false;
+
+    if (!writeBuffer_.empty()) {
+        ssize_t n = ::send(fd_, writeBuffer_.data(), writeBuffer_.size(), MSG_NOSIGNAL);
+        //MSG_NOSIGNAL防对端残留信息导致进程奔溃
+        if (n < 0) {
+            // 缓冲满
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                loop_->enableWrite(this);
+                return true;
+            }
+            std::cout << "[WARN] send failed, fd=" << fd_
+                      << " errno=" << errno << "\n";
+            return false;
         }
-        std::cout << "[WARN] send failed, fd=" << fd_
-                  << " errno=" << errno << "\n";
-        return false;
+
+        if (n > 0) {
+            writeBuffer_.erase(0, static_cast<size_t>(n));
+        }
     }
 
-    if (n > 0) {
-        writeBuffer_.erase(0, static_cast<size_t>(n)); 
-    }
-
-    if (writeBuffer_.empty()) {
-        loop_->disableWrite(this);
-    } else {
+    if (!writeBuffer_.empty()) {
         loop_->enableWrite(this);
+        return true;
+    }
+
+    loop_->disableWrite(this);
+
+    // 写缓冲已排空：通知上层可以继续补数据（文件下载泵）。
+    // 先拷贝一份再调用，允许回调内部 setOnWritable(nullptr) 销毁原 function。
+    if (onWritable_ && !inWriteCallback_) {
+        inWriteCallback_ = true;
+        auto cb = onWritable_;
+        cb();
+        inWriteCallback_ = false;
     }
     return true;
 }
@@ -77,4 +91,10 @@ bool Connection::handleWrite() {
 //通知room_注销连接,交给Loop销毁
 void Connection::onRemoved() {
     room_->removeConnection(this);
+}
+
+
+Connection::Connection(int fd,const InetAddr& addr,EventLoop* loop,ChatRoom* room) :
+    EventHandler(fd,loop),addr_(addr),room_(room){
+    cout << addr_.strIpPort() << "建立连接成功" << endl;
 }

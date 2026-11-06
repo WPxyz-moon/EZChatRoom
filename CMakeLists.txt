@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 2.80)
 #设置编译器
 set(CMAKE_C_COMPILER "/usr/local/gcc-9.3.0/bin/gcc")
 set(CMAKE_CXX_COMPILER "/usr/local/gcc-9.3.0/bin/g++")
@@ -22,7 +22,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 
-add_executable(ezChatRoom ${CMAKE_SOURCE_DIR}/main.cc)
+add_executable(ezChatRoom
+    ${CMAKE_SOURCE_DIR}/main.cc
+    ${CMAKE_SOURCE_DIR}/Base/codec.cpp
+    ${CMAKE_SOURCE_DIR}/Base/Md5.cpp
+    ${CMAKE_SOURCE_DIR}/ChatRoom/ChatRoom.cc
+    ${CMAKE_SOURCE_DIR}/ChatRoom/FileManager.cc
+    ${CMAKE_SOURCE_DIR}/Reactor/Acceptor.cc
+    ${CMAKE_SOURCE_DIR}/Reactor/Connection.cc
+    ${CMAKE_SOURCE_DIR}/Reactor/EventLoop.cc
+    ${CMAKE_SOURCE_DIR}/Reactor/KeyBoardHandler.cc
+)
 target_include_directories(ezChatRoom PRIVATE 
                         ${CMAKE_SOURCE_DIR}/ChatRoom 
                         ${CMAKE_SOURCE_DIR}/Base

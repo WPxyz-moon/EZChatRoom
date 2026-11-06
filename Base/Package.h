@@ -3,7 +3,6 @@
 #include <string>
 
 using namespace std;
-constexpr size_t PACK_HEADER_SIZE = sizeof(PackHeader);
 constexpr uint32_t MAGICNUM = 0xaebecbdd;
 constexpr uint32_t MAX_BODYLEN = 1024*1024;
 
@@ -41,6 +40,9 @@ struct PackHeader
 };
 #pragma pack(pop)
 static_assert(sizeof(PackHeader) == 10,"sizeof PackHeader must be 10");
+
+// 必须放在 PackHeader 定义之后，否则 sizeof 无法求出
+constexpr size_t PACK_HEADER_SIZE = sizeof(PackHeader);
 
 struct Package{
     PackType type_ = PackType::MESSAGE;
