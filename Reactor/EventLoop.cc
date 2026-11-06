@@ -1,4 +1,5 @@
 #include "EventLoop.h"
+#include "ChatRoom.h"
 #include <cstring>
 
 void EventLoop::loop(){
@@ -30,7 +31,7 @@ void EventLoop::loop(){
             }
         }
 
-        deletePendings();
+        pendingDelHandlers_.clear();
     }
 }
 
@@ -93,5 +94,4 @@ void EventLoop::removeHandler(EventHandler* handler){
     }
     handlers_.erase(it);
     handler->onRemoved();
-    pendingDelHandlers_.insert(handler);
 }

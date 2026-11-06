@@ -110,9 +110,12 @@ void ChatRoom::removeConnection(Connection* target) {
             onlineClients_.erase(it);
         }
     }
-
-    //取消连接监视
-    clients_.erase(target);
+    
+    auto clientIt = clients_.find(target);
+    if (clientIt != clients_.end()) {
+        loop_.pendToKillHandler(std::move(clientIt->second));
+        clients_.erase(clientIt);
+    }
     
 }
 
@@ -120,15 +123,16 @@ void ChatRoom::removeConnection(Connection* target) {
 ChatRoom::ChatRoom(string ip,uint16_t port):
     ser_addr_(ip,port)
 {   
-
     int listenfd = socket(AF_INET,SOCK_STREAM,0);
     if(listenfd == -1){
         cout << "listenfd create error";
         exit(-1);
     }
-    listener_ = new Acceptor(listenfd,loop_,ip,port);
+    listener_ = make_unique<Acceptor>(listenfd,&loop_,ip,port);
 }
 
+//析构时Loop_先死，会把所有注册的Handler注销，但是不影响他们的生命周期，然后
+//Ptr所有者Clients_会死，所有Connection对象就一起死了（所以Connection析构的时候无需释放资源,释放资源由Loop调控)
 ChatRoom::~ChatRoom(){
     
 }

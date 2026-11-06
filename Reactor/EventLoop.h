@@ -4,26 +4,24 @@
 #include <iostream>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
-//负责管理epoll生命周期，并提供注册管理，同时负责循环解析epoll返回的结果，调用Handler处理
-//负责在每轮loop结束，统一销毁Handler，构造由Handler/外部负责。
-//EventLoop是生命周期的实质管理者，负责对象的delete，
-//但是不代表 资源所有者只是 EventLoop， 完全可以是其他对象，可以触发时机通知Loop摧毁Handler
+//负责执行外部的handler回调，保证执行期间执行者的生命周期
+//于此同时绝对不允许在回调内部杀死ChatRoom导致Loop死亡/Connection非自然死亡
+
 class EventLoop
 {
 private:
     int epfd_;
-    unordered_map<EventHandler*,uint32_t> handlers_;
-    unordered_set<EventHandler*> pendingDelHandlers_;
+    using EventHandlerptr = std::unique_ptr<EventHandler>;
+    //handler所有权在ChatRoom，room不死执行期间不死，不提供执行期间杀死room的接口
+    //需要成员死去时，且room转移所有权给Loop延迟删除,避免函数内部删除自己。
+    unordered_map<EventHandler*,uint32_t> handlers_;       
+    unordered_set<EventHandlerptr> pendingDelHandlers_;
+    
     static constexpr int MAX_EVENT_NUMS = 1024; 
 
-    void deletePendings(){
-        for(auto handler : pendingDelHandlers_){
-            if(handler) delete handler;
-        }
-        pendingDelHandlers_.clear();
-    }
 public:
     void loop();
 
@@ -73,8 +71,8 @@ public:
         return it == handlers_.end() ? 0 : it->second;
     }
 
-    bool isPendingToDelete(Connection* conn){
-        return pendingDelHandlers_.find(conn) != pendingDelHandlers_.end();
+    void pendToKillHandler(EventHandlerptr ptr){
+        pendingDelHandlers_.insert(ptr);
     }
 
     EventLoop(){
@@ -91,7 +89,7 @@ public:
         for (auto* h : all) removeHandler(h);
         handlers_.clear();
 
-        deletePendings();                        // 把 pending 里的也 delete 掉
+        pendingDelHandlers_.clear();
         if(epfd_ >= 0){ close(epfd_); epfd_ = -1; }
     }
 };

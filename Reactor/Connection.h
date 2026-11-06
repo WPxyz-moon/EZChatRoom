@@ -40,6 +40,7 @@ public:
     //返回false表示连接失效，功能是EPOLLIN触发的时候转为packages
     bool handleRead() override;
     bool handleWrite() override;
+    void onRemoved() override;
     bool send(const Package& pack);
     string getName() const { return cliname_;}
     void setName(const string& name) { cliname_ = name; }

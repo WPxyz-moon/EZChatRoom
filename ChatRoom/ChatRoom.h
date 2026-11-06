@@ -2,25 +2,30 @@
 #include <sys/epoll.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <memory>
 #include <unistd.h>
 #include "Connection.h"
 #include "InetAddr.h"
 #include "../Reactor/Acceptor.h"
 #include "Messages.h"
+#include "EventLoop.h"
+#include "FileManager.h"
 using namespace std;
 
-class FileManager;
 
-//维护客户端名称
+//维护客户端名称,什么周期也由Loop管理
+//
 class ChatRoom
 {
 private:
+    using ConnectionPtr = unique_ptr<Connection>; 
+
     InetAddr ser_addr_;
     unordered_map<string,Connection*> onlineClients_;
-    unordered_set<Connection*> clients_;
-    Acceptor* listener_;
-    EventLoop* loop_;
-    FileManager* fileManager_;
+    unordered_map<Connection *,ConnectionPtr> clients_;
+    unique_ptr<Acceptor> listener_;
+    EventLoop loop_;
+    FileManager fileManager_;
     //消息处理
     //接口1.按Package的type解析处理Package的body（直接处理干净了，不返回）
     void handleLogin(Connection* sender, const string& body);
@@ -28,20 +33,8 @@ private:
     //接口2.解析消息，target为空代表为广播，否则就是发给特定目标
     void handleMessage(Connection* sender, const string& body);
 public:
-    ChatRoom(string ip,uint16_t port):
-        ser_addr_(ip,port)
-    {   
-        int listenfd = socket(AF_INET,SOCK_STREAM,0);
-        if(listenfd == -1){
-            cout << "listenfd create error";
-            exit(-1);
-        }
-        listener_ = new Acceptor(listenfd,loop_,ip,port);
-    }
-
-    ~ChatRoom(){
-        
-    }
+    ChatRoom(string ip,uint16_t port);
+    ~ChatRoom();
 
     string address() const { return ser_addr_.strIpPort();}
     int connectionNums() const { return clients_.size();} 
