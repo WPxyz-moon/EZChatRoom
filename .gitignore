@@ -1,0 +1,74 @@
+# =============== 构建产物 ===============
+build/
+build-*/
+bin/
+out/
+install/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+Makefile.*
+
+# =============== C/C++ 编译产物 ===============
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.dll
+*.exe
+*.out
+*.lib
+*.pdb
+*.ilk
+*.idb
+*.sdf
+*.opensdf
+*.vcxproj.user
+*.suo
+*.sln
+
+# =============== Qt 自动生成文件 ===============
+moc_*.cpp
+moc_*.h
+*.moc
+ui_*.h
+qrc_*.cpp
+*.qm
+*.qmlc
+*.jsc
+*_qmlcache.qrc
+*_plugin_import.cpp
+object_script.*.Release
+object_script.*.Debug
+.prl
+.app
+
+# =============== Qt / CMake 用户配置 ===============
+*.pro.user*
+*.qbs.user*
+CMakeLists.txt.user*
+/.qmake.cache
+/.qmake.stash
+/.qtcreator/
+
+# =============== IDE 与编辑器 ===============
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.#*
+*.*#
+
+# =============== 系统文件 ===============
+.DS_Store
+Thumbs.db
+.directory
+
+# =============== 日志与临时文件 ===============
+*.log
+*.tmp
+*.temp
+*.cache
