@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.80)
+cmake_minimum_required(VERSION 2.8.0)
 #设置编译器
 set(CMAKE_C_COMPILER "/usr/local/gcc-9.3.0/bin/gcc")
 set(CMAKE_CXX_COMPILER "/usr/local/gcc-9.3.0/bin/g++")

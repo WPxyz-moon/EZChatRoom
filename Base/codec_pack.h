@@ -18,7 +18,7 @@ inline std::string serialize(const Package& pkg) {
     out.resize(PACK_HEADER_SIZE + pkg.body_.size());
     memcpy(const_cast<char*>(out.data()), &pkh, PACK_HEADER_SIZE);          // C++17: data() 返回 char*
     if (!pkg.body_.empty()) {
-        memcpy(out.data() + PACK_HEADER_SIZE, pkg.body_.data(), pkg.body_.size());
+        memcpy(const_cast<char*>(out.data()) + PACK_HEADER_SIZE, pkg.body_.data(), pkg.body_.size());
     }
     return out;
 }
