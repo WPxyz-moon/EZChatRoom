@@ -80,5 +80,6 @@ CMakeLists.txt.user*
 .pch/
 .rcc/
 .uic/
-/build*/
-/.qtcreator/
+# 任意层级的构建目录（Qt Creator 可能建在子目录，如 Client/build）
+build*/
+.qtcreator/

@@ -1,10 +1,9 @@
 #include "codec.h"
 #include "Messages.h"
 #include "FileMessages.h"
+#include "Endian.h"
 
 #include <cstring>
-#include <arpa/inet.h>
-#include <endian.h>   // htobe64 / be64toh
 
 namespace codec {
 
@@ -12,17 +11,17 @@ namespace codec {
 namespace {
 
 void putU16(std::string& b, uint16_t v) {
-    uint16_t n = htons(v);
+    uint16_t n = wire::toBE16(v);
     b.append(reinterpret_cast<const char*>(&n), 2);
 }
 
 void putU32(std::string& b, uint32_t v) {
-    uint32_t n = htonl(v);
+    uint32_t n = wire::toBE32(v);
     b.append(reinterpret_cast<const char*>(&n), 4);
 }
 
 void putU64(std::string& b, uint64_t v) {
-    uint64_t n = htobe64(v);
+    uint64_t n = wire::toBE64(v);
     b.append(reinterpret_cast<const char*>(&n), 8);
 }
 
@@ -43,7 +42,7 @@ bool getU16(const std::string& b, size_t& off, uint16_t& out) {
     if (b.size() < off + 2) return false;
     uint16_t n;
     std::memcpy(&n, b.data() + off, 2);
-    out = ntohs(n);
+    out = wire::fromBE16(n);
     off += 2;
     return true;
 }
@@ -52,7 +51,7 @@ bool getU32(const std::string& b, size_t& off, uint32_t& out) {
     if (b.size() < off + 4) return false;
     uint32_t n;
     std::memcpy(&n, b.data() + off, 4);
-    out = ntohl(n);
+    out = wire::fromBE32(n);
     off += 4;
     return true;
 }
@@ -61,7 +60,7 @@ bool getU64(const std::string& b, size_t& off, uint64_t& out) {
     if (b.size() < off + 8) return false;
     uint64_t n;
     std::memcpy(&n, b.data() + off, 8);
-    out = be64toh(n);
+    out = wire::fromBE64(n);
     off += 8;
     return true;
 }

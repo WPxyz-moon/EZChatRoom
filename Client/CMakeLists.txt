@@ -18,6 +18,20 @@ target_include_directories(WinChatClient PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../Base
 )
 
+# 客户端与服务器共用同一份协议层（Base/），编解码逻辑只有一份。
+# Base/codec.cpp、codec_pack.h 已改为通过 Base/Endian.h 做字节序转换，
+# 不再依赖 <arpa/inet.h>、<endian.h>，Windows 下可以直接编译。
+# 注意：Base/InetAddr.h、Md5.cpp 仍是 Linux/文件 API 专用，客户端的 MD5 用 QCryptographicHash。
+target_sources(WinChatClient PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Base/Package.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Base/Messages.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Base/FileMessages.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Base/Endian.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Base/codec.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Base/codec_pack.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../Base/codec.cpp
+)
+
 qt_add_translations(WinChatClient
     TS_FILES WinChatClient_zh_CN.ts
 )

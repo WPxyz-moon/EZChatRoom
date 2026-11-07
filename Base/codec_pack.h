@@ -1,6 +1,6 @@
 #pragma once
 #include "Package.h"
-#include <arpa/inet.h>
+#include "Endian.h"
 #include <cstring>
 #include <vector>
 
@@ -11,9 +11,9 @@ namespace codec {
 inline std::string serialize(const Package& pkg) {
     std::string out;
     PackHeader pkh;
-    pkh.magic_   = htonl(MAGICNUM);
-    pkh.type_    = htons(static_cast<uint16_t>(pkg.type_));
-    pkh.bodyLen_ = htonl(static_cast<uint32_t>(pkg.body_.size()));
+    pkh.magic_   = wire::toBE32(MAGICNUM);
+    pkh.type_    = wire::toBE16(static_cast<uint16_t>(pkg.type_));
+    pkh.bodyLen_ = wire::toBE32(static_cast<uint32_t>(pkg.body_.size()));
 
     out.resize(PACK_HEADER_SIZE + pkg.body_.size());
     memcpy(const_cast<char*>(out.data()), &pkh, PACK_HEADER_SIZE);          // C++17: data() 返回 char*
@@ -30,9 +30,9 @@ inline bool parse(std::string& buffer, std::vector<Package>& out) {
         PackHeader pkheader;
         memcpy(&pkheader, buffer.data() + offset, sizeof(pkheader));
 
-        if (ntohl(pkheader.magic_) != MAGICNUM) return false;
+        if (wire::fromBE32(pkheader.magic_) != MAGICNUM) return false;
 
-        uint32_t bodyLen = ntohl(pkheader.bodyLen_);
+        uint32_t bodyLen = wire::fromBE32(pkheader.bodyLen_);
         if (bodyLen > MAX_BODYLEN) return false;
 
         size_t need = PACK_HEADER_SIZE + static_cast<size_t>(bodyLen);
@@ -41,7 +41,7 @@ inline bool parse(std::string& buffer, std::vector<Package>& out) {
         }
 
         Package pkg;
-        pkg.type_ = static_cast<PackType>(ntohs(pkheader.type_));
+        pkg.type_ = static_cast<PackType>(wire::fromBE16(pkheader.type_));
         pkg.body_.assign(buffer.data() + offset + PACK_HEADER_SIZE, bodyLen);
 
         out.push_back(std::move(pkg));
