@@ -40,7 +40,6 @@ Thumbs.db
 *.pro.user*
 *.qbs.user*
 CMakeLists.txt.user*
-CMakeLists.txt
 
 # xemacs temporary files
 *.flc
