@@ -44,7 +44,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->serverIpEdit->setText(QStringLiteral("192.168.253.130"));
     ui->portEdit->setValidator(new QIntValidator(1, 65535, this));
-    ui->portEdit->setText(QStringLiteral("6767"));   // 与 ChatRoom/ServerMain.cpp 一致
+    ui->portEdit->setText(QStringLiteral("8888"));   // 与 ChatRoom/ServerMain.cpp 一致
     //绑定 Ctrl + 回车 = 发送
     auto *sendShortcut = new QShortcut(QKeySequence(QStringLiteral("Ctrl+Return")),
                                        ui->inputEdit);
