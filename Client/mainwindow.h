@@ -25,6 +25,9 @@ private slots:
     void onConnectClicked();
     void onLoginClicked();
     void onSendClicked();
+    void onDisconnectClicked();
+    void onUploadClicked();
+    void onDownloadClicked();
 
     //核心 -> UI
     void onConnected();
@@ -37,10 +40,21 @@ private slots:
     void onRepeatLogin(const QString& name);
     void onServerError(quint16 code,const QString& reason);
 
+    //文件传输
+    void onUploadStarted(const QString& name,quint64 totalBytes);
+    void onUploadProgress(quint64 sentBytes,quint64 totalBytes);
+    void onUploadFinished(const QString& name,bool ok,const QString& reason);
+    void onDownloadStarted(const QString& name,quint64 totalBytes);
+    void onDownloadProgress(quint64 receivedBytes,quint64 totalBytes);
+    void onDownloadFinished(const QString& name,bool ok,const QString& reason,
+                            const QString& savePath);
+    void onTransferError(const QString& reason);
+
 private:
     //辅助界面显示
     void setUiLoggedOut();
     void appendMessage(const QDateTime& time,const QString& from,const QString& msg);
+    void addFileToList(const QString& name);
     void showTip(const QString &text);
 
     Ui::MainWindow *ui;

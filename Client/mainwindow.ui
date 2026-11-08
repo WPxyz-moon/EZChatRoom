@@ -218,7 +218,7 @@
              <number>8</number>
             </property>
             <item>
-             <layout class="QVBoxLayout" name="chatLayout" stretch="0,1,0">
+             <layout class="QVBoxLayout" name="chatLayout" stretch="0,1,0,0">
               <property name="spacing">
                <number>7</number>
               </property>
@@ -226,14 +226,56 @@
                <enum>QLayout::SetDefaultConstraint</enum>
               </property>
               <item>
-               <widget class="QLabel" name="chatTitleLabel">
-                <property name="text">
-                 <string>聊天室</string>
-                </property>
-               </widget>
+               <layout class="QHBoxLayout" name="chatHeaderLayout">
+                <item>
+                 <widget class="QLabel" name="chatTitleLabel">
+                  <property name="text">
+                   <string>聊天室</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <spacer name="chatHeaderSpacer">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>40</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="disconnectBtn">
+                  <property name="text">
+                   <string>断开连接</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </item>
               <item>
                <widget class="QTextBrowser" name="messageView"/>
+              </item>
+              <item>
+               <layout class="QHBoxLayout" name="targetLayout">
+                <item>
+                 <widget class="QLabel" name="targetCaptionLabel">
+                  <property name="text">
+                   <string>发送对象</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLineEdit" name="targetEdit">
+                  <property name="placeholderText">
+                   <string>留空则广播</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
               </item>
               <item>
                <layout class="QHBoxLayout" name="inputLayout" stretch="1,0">
