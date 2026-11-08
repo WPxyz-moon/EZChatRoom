@@ -11,6 +11,9 @@ qt_add_executable(WinChatClient
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
+    serverconnection.h serverconnection.cpp
+    clientcore.h clientcore.cpp
+
 )
 
 # 让 WinChatClient 能找到 Base 目录下的头文件
@@ -31,6 +34,10 @@ target_sources(WinChatClient PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../Base/codec_pack.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../Base/codec.cpp
 )
+
+#使用QTcpSocket
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Network LinguistTools)
+target_link_libraries(WinChatClient PRIVATE Qt::Core Qt::Widgets Qt::Network)
 
 qt_add_translations(WinChatClient
     TS_FILES WinChatClient_zh_CN.ts
