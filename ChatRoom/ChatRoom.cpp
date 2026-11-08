@@ -90,19 +90,19 @@ void ChatRoom::handleMessage(Connection* sender, const string& body){
         return;
     }
 
-    // target 回填：广播为空，私聊为接收者名称（发送者和接收者都能据此区分）
-    Message retMsg{getCurrentTimeSeconds(), senderName, msg.text, msg.cliName};
+    // sender 以连接上的登录名为准；target 原样回填，用于区分广播/私聊
+    Message retMsg{getCurrentTimeSeconds(), senderName, msg.text, msg.target};
     const string retbody = encodeMessage(retMsg);
 
     //广播
-    if(msg.cliName.empty()){ 
+    if(msg.target.empty()){
         for(auto& [name, conn] : onlineClients_){
             conn->send(Package(PackType::MESSAGE,retbody));
         }
-    } else { //私聊 
-        auto it = onlineClients_.find(msg.cliName);
+    } else { //私聊
+        auto it = onlineClients_.find(msg.target);
         if(it == onlineClients_.end()){
-            replyError(sender, 1, "User \"" + msg.cliName + "\" not found or offline.");
+            replyError(sender, 1, "User \"" + msg.target + "\" not found or offline.");
             return;
         }
         if(it->second != sender){

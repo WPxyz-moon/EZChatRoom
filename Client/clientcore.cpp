@@ -98,9 +98,10 @@ void ClientCore::sendChat(const QString &text)
     if(!m_loggedIn) return;
 
     Message msg;
-    msg.time = 0;            // C->S 留 0，由服务器填
-    msg.cliName.clear();     // 空 = 广播
+    msg.time = 0;                        // C->S 留 0，由服务器填
+    msg.sender = m_name.toStdString();   // 发送者
     msg.text = text.toStdString();
+    msg.target.clear();                  // 空 = 广播
     m_conn->send(Package(PackType::MESSAGE,codec::encodeMessage(msg)));
 }
 
@@ -110,8 +111,9 @@ void ClientCore::sendChatTo(const QString &target, const QString &text)
 
     Message msg;
     msg.time = 0;
-    msg.cliName = target.toStdString();
+    msg.sender = m_name.toStdString();
     msg.text = text.toStdString();
+    msg.target = target.toStdString();   // 非空 = 私聊
     m_conn->send(Package(PackType::MESSAGE,codec::encodeMessage(msg)));
 }
 
@@ -360,7 +362,7 @@ void ClientCore::onFrame(const Package &frame)
 
         emit messageReceived(
             time,
-            QString::fromStdString(msg.cliName),
+            QString::fromStdString(msg.sender),
             QString::fromStdString(msg.target),
             QString::fromStdString(msg.text)
         );
