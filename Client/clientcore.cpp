@@ -522,6 +522,11 @@ void ClientCore::onFrame(const Package &frame)
         emit fileDownloadProgress(m_download.received,m_download.totalSize);
         break;
     }
+    case PackType::FILE_LIST_CHANGED :{
+        // 服务器广播：有人上传成功，文件索引变了，自己重新拉一份列表
+        requestFileList();
+        break;
+    }
     case PackType::FILE_LIST_RESP :{
         FileListResp resp;
         if(!codec::decodeFileListResp(frame.body_,resp)){

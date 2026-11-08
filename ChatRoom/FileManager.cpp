@@ -316,24 +316,24 @@ void FileManager::onUploadChunk(Connection* conn, const std::string& body) {
     ++s.nextChunk;
 }
 
-void FileManager::onUploadDone(Connection* conn, const std::string& body) {
+bool FileManager::onUploadDone(Connection* conn, const std::string& body) {
     FileUploadDone done;
     if (!decodeFileUploadDone(body, done)) {
         sendError(conn, 0, "Bad FILE_UPLOAD_DONE");
-        return;
+        return false;
     }
 
     auto it = uploads_.find(conn);
     if (it == uploads_.end()) {
         sendError(conn, 1, "No active upload");
-        return;
+        return false;
     }
     UploadSession& s = it->second;
 
     if (done.fileId != s.fileId) {
         sendError(conn, 1, "fileId mismatch");
         abortUpload(conn);
-        return;
+        return false;
     }
 
     FileUploadDoneAck ack;
@@ -344,7 +344,7 @@ void FileManager::onUploadDone(Connection* conn, const std::string& body) {
         ack.reason = "Incomplete upload";
         conn->send(Package(PackType::FILE_UPLOAD_DONE_ACK, encodeFileUploadDoneAck(ack)));
         abortUpload(conn);
-        return;
+        return false;
     }
 
     if (std::fflush(s.fp.get()) != 0 || std::ferror(s.fp.get())) {
@@ -352,7 +352,7 @@ void FileManager::onUploadDone(Connection* conn, const std::string& body) {
         ack.reason = "Flush failed";
         conn->send(Package(PackType::FILE_UPLOAD_DONE_ACK, encodeFileUploadDoneAck(ack)));
         abortUpload(conn);
-        return;
+        return false;
     }
     s.fp.reset();
 
@@ -362,14 +362,14 @@ void FileManager::onUploadDone(Connection* conn, const std::string& body) {
         ack.reason = "Checksum failed";
         conn->send(Package(PackType::FILE_UPLOAD_DONE_ACK, encodeFileUploadDoneAck(ack)));
         abortUpload(conn);
-        return;
+        return false;
     }
     if (!s.expectedMd5.empty() && s.expectedMd5 != actual) {
         ack.code = 3;
         ack.reason = "MD5 mismatch";
         conn->send(Package(PackType::FILE_UPLOAD_DONE_ACK, encodeFileUploadDoneAck(ack)));
         abortUpload(conn);
-        return;
+        return false;
     }
 
     std::string finalPath = pathFor(s.fileId, ".dat");
@@ -378,7 +378,7 @@ void FileManager::onUploadDone(Connection* conn, const std::string& body) {
         ack.reason = "Rename failed";
         conn->send(Package(PackType::FILE_UPLOAD_DONE_ACK, encodeFileUploadDoneAck(ack)));
         abortUpload(conn);
-        return;
+        return false;
     }
 
     FileEntry e;
@@ -399,6 +399,7 @@ void FileManager::onUploadDone(Connection* conn, const std::string& body) {
     ack.reason.clear();
     conn->send(Package(PackType::FILE_UPLOAD_DONE_ACK, encodeFileUploadDoneAck(ack)));
     uploads_.erase(it);
+    return true;
 }
 
 // ===================== 下载 =====================

@@ -34,7 +34,8 @@ public:
     // 上传：META 分配 fileId 并创建临时文件；CHUNK 顺序落盘；DONE 校验 MD5 后转正
     void onUploadMeta(Connection* conn, const std::string& body);
     void onUploadChunk(Connection* conn, const std::string& body);
-    void onUploadDone(Connection* conn, const std::string& body);
+    // 返回 true 表示文件已成功入索引，调用方据此广播文件列表变化
+    bool onUploadDone(Connection* conn, const std::string& body);
 
     // 下载：REQ 后回 META，再按写缓冲水位分块推送 CHUNK，最后 DONE
     void onDownloadReq(Connection* conn, const std::string& body);

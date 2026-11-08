@@ -30,6 +30,7 @@ enum class PackType : uint16_t {
     // ===== 0x05 段：文件列表 =====
     FILE_LIST_REQ           = 0x0501,  // C→S 请求服务器文件列表（body 为空）
     FILE_LIST_RESP          = 0x0502,  // S→C 文件列表（id/文件名/大小）
+    FILE_LIST_CHANGED       = 0x0503,  // S→C 文件列表已变化（广播，body 为空）
 
     // ===== 0xF0 段：系统 =====
     ERROR_MSG               = 0xF001,  // 通用错误

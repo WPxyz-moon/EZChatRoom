@@ -33,7 +33,10 @@ void ChatRoom::analysePackages(Connection* sender,const vector<Package>& package
                 fileManager_.onUploadChunk(sender, pack.body_);
                 break;
             case PackType::FILE_UPLOAD_DONE:
-                fileManager_.onUploadDone(sender, pack.body_);
+                // 上传成功说明服务器文件索引变了，通知所有在线客户端刷新
+                if(fileManager_.onUploadDone(sender, pack.body_)){
+                    broadcastFileListChanged();
+                }
                 break;
             case PackType::FILE_DOWNLOAD_REQ:
                 fileManager_.onDownloadReq(sender, pack.body_);
@@ -189,6 +192,15 @@ bool ChatRoom::kick(const string& name) {
     // 走 Loop 注销，触发 onRemoved → removeConnection，对象由 Loop 延迟删除
     loop_.removeHandler(conn);
     return true;
+}
+
+// 只发“列表已变化”的小通知，列表内容由各客户端自己 REQ 拉取，
+// 避免每个客户端都收到整份列表（体积受 MAX_BODYLEN 限制）
+void ChatRoom::broadcastFileListChanged() {
+    const string empty;
+    for (auto& kv : onlineClients_) {
+        kv.second->send(Package(PackType::FILE_LIST_CHANGED, empty));
+    }
 }
 
 void ChatRoom::broadcastFromServer(const string& text) {

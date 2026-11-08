@@ -340,8 +340,7 @@ void MainWindow::onUploadFinished(const QString &name, bool ok, const QString &r
         ui->transferBar->setValue(100);
         ui->transferLabel->setText(QStringLiteral("上传完成：%1").arg(name));
         showTip(QStringLiteral("文件已上传：%1").arg(name));
-        // 上传成功后刷新侧边栏，新文件由服务器列表带回来
-        m_core->requestFileList();
+        // 侧边栏刷新由服务器广播 FILE_LIST_CHANGED 统一触发（自己也会收到）
     } else {
         ui->transferBar->setValue(0);
         ui->transferLabel->setText(

@@ -38,6 +38,8 @@ private:
     
     //接口2.解析消息，target为空代表为广播，否则就是发给特定目标
     void handleMessage(Connection* sender, const string& body);
+    //文件索引变化（上传成功）后通知所有在线客户端刷新列表
+    void broadcastFileListChanged();
 public:
     ChatRoom(string ip,uint16_t port);
     ~ChatRoom();
