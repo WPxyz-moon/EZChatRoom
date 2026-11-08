@@ -47,9 +47,12 @@ public:
 signals:
 
     void connected();
-    void disconnected();
+    void disconnected();        // 本地主动断开
+    void connectionLost();      // 服务器关闭/网络异常导致的断开
     void loginResult(bool ok,const QString& reason);
-    void messageReceived(const QDateTime& time,const QString& from,const QString& msg);
+    // target 为空=广播；非空=私聊，值为接收者名称
+    void messageReceived(const QDateTime& time,const QString& from,
+                         const QString& target,const QString& msg);
 
     void protocolError(const QString& reason);
     void connectionError(const QString& reason);
@@ -120,6 +123,7 @@ private:
     ServerConnection* m_conn = nullptr;
     QString m_name;
     bool m_loggedIn = false;
+    bool m_disconnectRequested = false;
 
     UploadState m_upload;
     DownloadState m_download;

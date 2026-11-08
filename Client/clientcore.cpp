@@ -17,6 +17,9 @@ ClientCore::ClientCore(QObject *parent):
     connect(m_conn,&ServerConnection::connected,this,&ClientCore::onConnected);
     connect(m_conn,&ServerConnection::frameReceived,this,&ClientCore::onFrame);
     connect(m_conn,&ServerConnection::disconnected,this,[this]{
+        const bool requested = m_disconnectRequested;
+        m_disconnectRequested = false;
+
         if(m_upload.active){
             finishUpload(false,QStringLiteral("连接已断开"));
         }
@@ -24,7 +27,12 @@ ClientCore::ClientCore(QObject *parent):
             finishDownload(false,QStringLiteral("连接已断开"));
         }
         m_loggedIn = false;
-        emit disconnected();
+
+        if(requested){
+            emit disconnected();
+        }else{
+            emit connectionLost();
+        }
     });
 
     connect(m_conn,&ServerConnection::protocolError,this,&ClientCore::protocolError);
@@ -50,6 +58,8 @@ void ClientCore::connectServer(const QString &host, quint16 port)
 
 void ClientCore::disconnectServer()
 {
+    // 标记为用户主动断开，避免上层误报“服务器断开”
+    m_disconnectRequested = true;
     m_conn->disconnectFromHost();
 }
 
@@ -351,6 +361,7 @@ void ClientCore::onFrame(const Package &frame)
         emit messageReceived(
             time,
             QString::fromStdString(msg.cliName),
+            QString::fromStdString(msg.target),
             QString::fromStdString(msg.text)
         );
         break;

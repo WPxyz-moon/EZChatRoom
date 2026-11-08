@@ -90,7 +90,8 @@ void ChatRoom::handleMessage(Connection* sender, const string& body){
         return;
     }
 
-    Message retMsg{getCurrentTimeSeconds(), senderName, msg.text};
+    // target 回填：广播为空，私聊为接收者名称（发送者和接收者都能据此区分）
+    Message retMsg{getCurrentTimeSeconds(), senderName, msg.text, msg.cliName};
     const string retbody = encodeMessage(retMsg);
 
     //广播
@@ -188,7 +189,7 @@ bool ChatRoom::kick(const string& name) {
 }
 
 void ChatRoom::broadcastFromServer(const string& text) {
-    Message msg{getCurrentTimeSeconds(), "server", text};
+    Message msg{getCurrentTimeSeconds(), "server", text, ""};
     const string body = encodeMessage(msg);
     for (auto& kv : onlineClients_) {
         kv.second->send(Package(PackType::MESSAGE, body));

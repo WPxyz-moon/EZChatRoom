@@ -32,8 +32,10 @@ private slots:
     //核心 -> UI
     void onConnected();
     void onDisconnected();
+    void onConnectionLost();
     void onLoginResult(bool ok,const QString& reason);
-    void onCliMessage(const QDateTime& time,const QString& from,const QString& msg);
+    void onCliMessage(const QDateTime& time,const QString& from,
+                      const QString& target,const QString& msg);
 
     void onProtocolError(const QString& reason);
     void onConnectionError(const QString& reason);
@@ -53,7 +55,8 @@ private slots:
 private:
     //辅助界面显示
     void setUiLoggedOut();
-    void appendMessage(const QDateTime& time,const QString& from,const QString& msg);
+    void appendMessage(const QDateTime& time,const QString& from,
+                       const QString& target,const QString& msg);
     void addFileToList(const QString& name);
     void showTip(const QString &text);
 

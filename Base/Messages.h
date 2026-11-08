@@ -14,12 +14,15 @@ struct LoginAck {
 };
 
 // MESSAGE / MESSAGE_BROADCAST: 聊天消息
-// 客户端发 MESSAGE： targetName空代表广播，否则代表定向发送,time_ 留 0
-// 服务端广播 MESSAGE_BROADCAST：time_ 填服务端时间戳
+// 客户端发 MESSAGE： cliName空代表广播，否则代表定向发送,time_ 留 0
+// 服务端转发 MESSAGE：time_ 填服务端时间戳
 struct Message {
     uint64_t    time = 0;     // 服务端时间戳（秒），0=未填；线格式用 uint64_t 定宽
     std::string cliName;      // C->S表示目标客户端名称，S->C表示来源客户端名称
     std::string text;
+    // S->C：私聊接收者名称，空=广播；C->S不使用。
+    // 线格式放在最后且可选，旧版本对端可以忽略它，保持兼容。
+    std::string target;
 };
 
 // ERROR_MSG: 通用错误（双向）

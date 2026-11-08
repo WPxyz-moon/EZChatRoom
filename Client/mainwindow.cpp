@@ -62,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent)
     //核心 -> UI 连接
     connect(m_core, &ClientCore::connected,this,&MainWindow::onConnected);
     connect(m_core, &ClientCore::disconnected,this,&MainWindow::onDisconnected);
+    connect(m_core, &ClientCore::connectionLost,this,&MainWindow::onConnectionLost);
     connect(m_core, &ClientCore::loginResult,this,&MainWindow::onLoginResult);
     connect(m_core, &ClientCore::messageReceived,this,&MainWindow::onCliMessage);
     connect(m_core, &ClientCore::connectionError,this,&MainWindow::onConnectionError);
@@ -174,6 +175,16 @@ void MainWindow::onDisconnected()
     showTip(QStringLiteral("已断开连接"));
 }
 
+//服务器关闭/网络异常导致的断开：弹窗明确提示
+void MainWindow::onConnectionLost()
+{
+    setUiLoggedOut();
+    ui->pageStack->setCurrentWidget(ui->loginPage);
+    showTip(QStringLiteral("与服务器的连接已中断"));
+    QMessageBox::warning(this, QStringLiteral("连接中断"),
+                         QStringLiteral("与服务器的连接已断开，可能服务器已关闭或网络异常。"));
+}
+
 void MainWindow::onDisconnectClicked()
 {
     m_core->disconnectServer();
@@ -204,9 +215,10 @@ void MainWindow::onLoginResult(bool ok, const QString &reason)
     ui->inputEdit->setFocus();
 }
 
-void MainWindow::onCliMessage(const QDateTime &time, const QString &from, const QString &msg)
+void MainWindow::onCliMessage(const QDateTime &time, const QString &from,
+                              const QString &target, const QString &msg)
 {
-    appendMessage(time, from, msg);
+    appendMessage(time, from, target, msg);
 }
 
 //底层Connection已经主动断开，这里只是通知更新UI
@@ -389,23 +401,41 @@ void MainWindow::addFileToList(const QString &name)
 }
 
 //处理文本，转为HTML显示
-void MainWindow::appendMessage(const QDateTime &time, const QString &from, const QString &msg)
+void MainWindow::appendMessage(const QDateTime &time, const QString &from,
+                               const QString &target, const QString &msg)
 {
     // 消息内容是用户输入，先转义再拼 HTML，防止HTML注入
     QString body = msg.toHtmlEscaped();
     body.replace(QLatin1Char('\n'), QStringLiteral("<br>"));
 
+    const bool own = m_core->isLoggedIn() && from == m_core->name();
+    const bool isPrivate = !target.isEmpty();
+
     QString sender = from.toHtmlEscaped();
     // 自己发的消息（服务器会回显给发送者）用颜色标出来
-    if (m_core->isLoggedIn() && from == m_core->name()) {
+    if (own) {
         sender = QStringLiteral("<span style=\"color:#1565c0\">%1</span>").arg(sender);
     }
 
-    //追加显示[时间(灰)] 发送者 \n 消息
+    // [私聊]/[广播] 放在发送者与正文的换行之前；自己的私聊标注发给了谁
+    QString tag;
+    if (isPrivate) {
+        if (own) {
+            tag = QStringLiteral("<span style=\"color:#ef6c00\">[私聊→%1]</span>")
+                      .arg(target.toHtmlEscaped());
+        } else {
+            tag = QStringLiteral("<span style=\"color:#ef6c00\">[私聊]</span>");
+        }
+    } else {
+        tag = QStringLiteral("<span style=\"color:#888\">[广播]</span>");
+    }
+
+    //追加显示[时间(灰)] 发送者 [私聊/广播] \n 消息
     ui->messageView->append(
-        QStringLiteral("<span style=\"color:#888\">[%1]</span> <b>%2</b><br>%3")
+        QStringLiteral("<span style=\"color:#888\">[%1]</span> <b>%2</b> %3<br>%4")
             .arg(time.toString(QStringLiteral("HH:mm:ss")),
                  sender,
+                 tag,
                  body));
 
     // 追加后滚到最底部(QTextBrowser自带滚动条)

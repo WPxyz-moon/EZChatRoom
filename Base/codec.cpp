@@ -117,6 +117,7 @@ std::string encodeMessage(const Message& msg) {
     putU64(body, msg.time);
     putStr16(body, msg.cliName);
     putStr16(body, msg.text);
+    putStr16(body, msg.target);   // 新增字段放在最后，旧版本解码时会忽略
     return body;
 }
 
@@ -125,6 +126,10 @@ bool decodeMessage(const std::string& body, Message& out) {
     if (!getU64(body, off, out.time)) return false;
     if (!getStr16(body, off, out.cliName)) return false;
     if (!getStr16(body, off, out.text)) return false;
+
+    // target 是后加的可选字段，兼容旧服务器/旧客户端发来的 3 字段消息
+    out.target.clear();
+    if (off < body.size() && !getStr16(body, off, out.target)) return false;
     return true;
 }
 
