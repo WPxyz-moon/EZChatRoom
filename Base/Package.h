@@ -27,6 +27,10 @@ enum class PackType : uint16_t {
     FILE_DOWNLOAD_CHUNK     = 0x0403,  // S→C 文件块
     FILE_DOWNLOAD_DONE      = 0x0404,  // S→C 下载完成
 
+    // ===== 0x05 段：文件列表 =====
+    FILE_LIST_REQ           = 0x0501,  // C→S 请求服务器文件列表（body 为空）
+    FILE_LIST_RESP          = 0x0502,  // S→C 文件列表（id/文件名/大小）
+
     // ===== 0xF0 段：系统 =====
     ERROR_MSG               = 0xF001,  // 通用错误
 };

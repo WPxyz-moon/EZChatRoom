@@ -238,6 +238,38 @@ bool decodeFileDownloadDone(const std::string& body, FileDownloadDone& out) {
     return getU32(body, off, out.fileId);
 }
 
+// ===== 文件列表 =====
+std::string encodeFileListResp(const FileListResp& resp) {
+    std::string body;
+    putU32(body, static_cast<uint32_t>(resp.files.size()));
+    for (const auto& f : resp.files) {
+        putU32(body, f.fileId);
+        putStr16(body, f.name);
+        putU64(body, f.size);
+    }
+    return body;
+}
+
+bool decodeFileListResp(const std::string& body, FileListResp& out) {
+    size_t off = 0;
+    uint32_t count = 0;
+    if (!getU32(body, off, count)) return false;
+    // 一条 body 受 MAX_BODYLEN(1MB) 限制，条目数超过该值必然是坏包
+    if (count > MAX_BODYLEN / 8) return false;
+
+    FileListResp resp;
+    resp.files.reserve(count);
+    for (uint32_t i = 0; i < count; ++i) {
+        FileInfo f;
+        if (!getU32(body, off, f.fileId)) return false;
+        if (!getStr16(body, off, f.name)) return false;
+        if (!getU64(body, off, f.size)) return false;
+        resp.files.push_back(std::move(f));
+    }
+    out = std::move(resp);
+    return true;
+}
+
 // ===== 通用错误 =====
 std::string encodeErrorMsg(const ErrorMsg& err) {
     std::string body;

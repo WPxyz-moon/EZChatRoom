@@ -176,6 +176,37 @@ void FileManager::cancelAll() {
     downloads_.clear();
 }
 
+// ===================== 文件列表 =====================
+
+void FileManager::onListReq(Connection* conn) {
+    if (conn->getName().empty()) {
+        sendError(conn, 2, "Please login first.");
+        return;
+    }
+
+    // files_ 是启动时由 *.meta 重建、上传完成时增补的索引：
+    // 只包含已完成（有 .dat 且 MD5 校验通过）的文件，上传中的 .part 不会出现
+    std::vector<FileInfo> list;
+    list.reserve(std::min(files_.size(), MAX_LIST_ITEMS));
+    for (const auto& kv : files_) {
+        FileInfo info;
+        info.fileId = kv.second.id;
+        info.name = kv.second.name;
+        info.size = kv.second.size;
+        list.push_back(std::move(info));
+    }
+
+    // 新上传的排在前面；超出上限的旧文件不返回（单包受 MAX_BODYLEN 限制）
+    std::sort(list.begin(), list.end(), [](const FileInfo& a, const FileInfo& b) {
+        return a.fileId > b.fileId;
+    });
+    if (list.size() > MAX_LIST_ITEMS) list.resize(MAX_LIST_ITEMS);
+
+    FileListResp resp;
+    resp.files = std::move(list);
+    conn->send(Package(PackType::FILE_LIST_RESP, encodeFileListResp(resp)));
+}
+
 // ===================== 上传 =====================
 
 void FileManager::onUploadMeta(Connection* conn, const std::string& body) {

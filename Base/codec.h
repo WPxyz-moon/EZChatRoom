@@ -19,6 +19,8 @@ struct FileUploadDone;
 struct FileUploadDoneAck;
 struct FileDownloadReq;
 struct FileDownloadDone;
+struct FileInfo;
+struct FileListResp;
 
 // ===== body 层：Package.body ↔ 具体结构 =====
 // 每个 encode 返回 Package 的 body 字节流；decode 从 body 还原结构
@@ -63,6 +65,10 @@ bool decodeFileDownloadReq(const std::string& body, FileDownloadReq& out);
 // ===== 下载完成 =====
 std::string encodeFileDownloadDone(const FileDownloadDone& done);
 bool decodeFileDownloadDone(const std::string& body, FileDownloadDone& out);
+
+// ===== 文件列表 =====
+std::string encodeFileListResp(const FileListResp& resp);
+bool decodeFileListResp(const std::string& body, FileListResp& out);
 
 // ===== 通用错误 =====
 std::string encodeErrorMsg(const ErrorMsg& err);

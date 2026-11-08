@@ -3,8 +3,10 @@
 
 #include <QMainWindow>
 #include <QDateTime>
+#include <QList>
 
 class ClientCore;
+struct RemoteFileInfo;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -51,13 +53,13 @@ private slots:
     void onDownloadFinished(const QString& name,bool ok,const QString& reason,
                             const QString& savePath);
     void onTransferError(const QString& reason);
+    void onFileListReceived(const QList<RemoteFileInfo>& files);
 
 private:
     //辅助界面显示
     void setUiLoggedOut();
     void appendMessage(const QDateTime& time,const QString& from,
                        const QString& target,const QString& msg);
-    void addFileToList(const QString& name);
     void showTip(const QString &text);
 
     Ui::MainWindow *ui;

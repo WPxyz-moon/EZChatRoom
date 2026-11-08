@@ -22,6 +22,8 @@ public:
     static constexpr uint64_t MAX_FILE_SIZE = 512ull * 1024 * 1024;
     // 下载泵：连接写缓冲超过该值就暂停发送，等 onWritable 回调再来补
     static constexpr size_t HIGH_WATER = 1024 * 1024;
+    // 列表响应上限：单包不能超过 MAX_BODYLEN(1MB)，超出的旧文件不返回
+    static constexpr size_t MAX_LIST_ITEMS = 2000;
 
     explicit FileManager(std::string storageDir = "./uploads");
     ~FileManager();
@@ -36,6 +38,9 @@ public:
 
     // 下载：REQ 后回 META，再按写缓冲水位分块推送 CHUNK，最后 DONE
     void onDownloadReq(Connection* conn, const std::string& body);
+
+    // 列表：把索引里已完成的文件回给客户端（fileId 倒序，新上传的在前）
+    void onListReq(Connection* conn);
 
     // Connection 断开时清掉它的上传/下载会话（由 ChatRoom::removeConnection 调用）
     void cancelConnection(Connection* conn);

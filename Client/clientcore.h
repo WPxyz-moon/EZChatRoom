@@ -5,12 +5,21 @@
 #include <QDateTime>
 #include <QCryptographicHash>
 #include <QFile>
+#include <QList>
 #include <QSaveFile>
+#include <QString>
 
 #include <memory>
 
 class ServerConnection;
 struct Package;
+
+// 服务器文件列表中的一条：id 用于下载时精确定位（同名文件也区分）
+struct RemoteFileInfo {
+    quint32 id = 0;
+    QString name;
+    quint64 size = 0;
+};
 
 //负责把帧转为Message等类然后处理，然后给上层返回QString，上层只用QString即可沟通
 class ClientCore : public QObject
@@ -40,6 +49,9 @@ public:
     // 下载服务器上的文件（remoteName 可以是文件名或 fileId），保存到 savePath
     bool downloadFile(const QString& remoteName,const QString& savePath);
 
+    // 请求服务器文件列表（需已登录）；结果通过 fileListReceived 返回
+    void requestFileList();
+
     bool isLoggedIn() const { return m_loggedIn; }
 
     QString name() const { return m_loggedIn ? m_name : QString(); }
@@ -68,6 +80,9 @@ signals:
     void fileDownloadProgress(quint64 receivedBytes,quint64 totalBytes);
     void fileDownloadFinished(const QString& name,bool ok,const QString& reason,
                               const QString& savePath);
+
+    //服务器上已完成、可下载的文件（fileId 倒序）
+    void fileListReceived(const QList<RemoteFileInfo>& files);
 
     //本地参数错误/已有传输等，未进入协议流程
     void transferError(const QString& reason);

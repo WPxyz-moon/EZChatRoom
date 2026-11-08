@@ -38,6 +38,9 @@ void ChatRoom::analysePackages(Connection* sender,const vector<Package>& package
             case PackType::FILE_DOWNLOAD_REQ:
                 fileManager_.onDownloadReq(sender, pack.body_);
                 break;
+            case PackType::FILE_LIST_REQ:
+                fileManager_.onListReq(sender);
+                break;
             default:
                 break;
         }

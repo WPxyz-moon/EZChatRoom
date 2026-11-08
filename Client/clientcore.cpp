@@ -234,6 +234,12 @@ bool ClientCore::downloadFile(const QString &remoteName, const QString &savePath
     return true;
 }
 
+void ClientCore::requestFileList()
+{
+    if(!m_loggedIn) return;
+    m_conn->send(Package(PackType::FILE_LIST_REQ,std::string()));
+}
+
 void ClientCore::pumpUpload()
 {
     if(!m_upload.active || m_upload.waitingAck || m_upload.pumping || !m_upload.file){
@@ -514,6 +520,25 @@ void ClientCore::onFrame(const Package &frame)
         ++m_download.nextChunk;
         m_download.received += static_cast<quint64>(chunk.data.size());
         emit fileDownloadProgress(m_download.received,m_download.totalSize);
+        break;
+    }
+    case PackType::FILE_LIST_RESP :{
+        FileListResp resp;
+        if(!codec::decodeFileListResp(frame.body_,resp)){
+            emit protocolError(QStringLiteral("bad FILE_LIST_RESP body"));
+            return;
+        }
+
+        QList<RemoteFileInfo> files;
+        files.reserve(static_cast<qsizetype>(resp.files.size()));
+        for(const auto& f : resp.files){
+            RemoteFileInfo info;
+            info.id = f.fileId;
+            info.name = QString::fromStdString(f.name);
+            info.size = f.size;
+            files.append(std::move(info));
+        }
+        emit fileListReceived(files);
         break;
     }
     case PackType::FILE_DOWNLOAD_DONE :{

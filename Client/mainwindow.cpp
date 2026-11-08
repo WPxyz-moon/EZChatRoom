@@ -77,6 +77,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_core, &ClientCore::fileDownloadProgress,this,&MainWindow::onDownloadProgress);
     connect(m_core, &ClientCore::fileDownloadFinished,this,&MainWindow::onDownloadFinished);
     connect(m_core, &ClientCore::transferError,this,&MainWindow::onTransferError);
+    connect(m_core, &ClientCore::fileListReceived,this,&MainWindow::onFileListReceived);
 
     //初始化UI界面
     setUiLoggedOut();
@@ -213,6 +214,9 @@ void MainWindow::onLoginResult(bool ok, const QString &reason)
     ui->transferBar->setValue(0);
     ui->pageStack->setCurrentWidget(ui->chatPage);
     ui->inputEdit->setFocus();
+
+    // 登录成功后拉一次服务器文件列表
+    m_core->requestFileList();
 }
 
 void MainWindow::onCliMessage(const QDateTime &time, const QString &from,
@@ -276,33 +280,42 @@ void MainWindow::onDownloadClicked()
         return;
     }
 
-    // 优先用列表里选中的文件；没有选中就手动输入服务器上的文件名
-    QString name;
+    // 优先用列表里选中的文件：用 fileId 作为下载标识，同名文件也能精确区分
+    QString remote;         // 发给服务器的标识（fileId 字符串或文件名）
+    QString fileName;       // 保存对话框的默认文件名
     if (auto *item = ui->fileList->currentItem()) {
-        name = item->text().trimmed();
+        remote = item->data(Qt::UserRole).toString();
+        fileName = item->data(Qt::UserRole + 1).toString();
+        if (fileName.isEmpty())
+            fileName = item->text().trimmed();
+        if (remote.isEmpty())
+            remote = fileName;      // 兜底：按文件名
     }
-    if (name.isEmpty()) {
+
+    // 没有选中就手动输入服务器上的文件名或 fileId
+    if (remote.isEmpty()) {
         bool ok = false;
-        name = QInputDialog::getText(this,
-                                     QStringLiteral("下载文件"),
-                                     QStringLiteral("服务器上的文件名（或 fileId）："),
-                                     QLineEdit::Normal,
-                                     QString(),
-                                     &ok).trimmed();
-        if (!ok || name.isEmpty())
+        remote = QInputDialog::getText(this,
+                                       QStringLiteral("下载文件"),
+                                       QStringLiteral("服务器上的文件名（或 fileId）："),
+                                       QLineEdit::Normal,
+                                       QString(),
+                                       &ok).trimmed();
+        if (!ok || remote.isEmpty())
             return;
+        fileName = remote;
     }
 
     const QString savePath = QFileDialog::getSaveFileName(
         this,
         QStringLiteral("保存文件"),
-        QDir::homePath() + QLatin1Char('/') + name);
+        QDir::homePath() + QLatin1Char('/') + fileName);
     if (savePath.isEmpty())
         return;
 
-    ui->transferLabel->setText(QStringLiteral("请求下载 %1 …").arg(name));
+    ui->transferLabel->setText(QStringLiteral("请求下载 %1 …").arg(fileName));
     ui->transferBar->setValue(0);
-    m_core->downloadFile(name, savePath);
+    m_core->downloadFile(remote, savePath);
 }
 
 void MainWindow::onUploadStarted(const QString &name, quint64 totalBytes)
@@ -326,8 +339,9 @@ void MainWindow::onUploadFinished(const QString &name, bool ok, const QString &r
     if (ok) {
         ui->transferBar->setValue(100);
         ui->transferLabel->setText(QStringLiteral("上传完成：%1").arg(name));
-        addFileToList(name);
         showTip(QStringLiteral("文件已上传：%1").arg(name));
+        // 上传成功后刷新侧边栏，新文件由服务器列表带回来
+        m_core->requestFileList();
     } else {
         ui->transferBar->setValue(0);
         ui->transferLabel->setText(
@@ -358,7 +372,6 @@ void MainWindow::onDownloadFinished(const QString &name, bool ok, const QString 
     if (ok) {
         ui->transferBar->setValue(100);
         ui->transferLabel->setText(QStringLiteral("下载完成：%1").arg(name));
-        addFileToList(name);
         showTip(QStringLiteral("文件已保存：%1").arg(savePath));
     } else {
         ui->transferBar->setValue(0);
@@ -387,17 +400,22 @@ void MainWindow::setUiLoggedOut()
     ui->connStatusLabel->setText(QStringLiteral("未连接"));
     ui->transferLabel->setText(QStringLiteral("空闲"));
     ui->transferBar->setValue(0);
+    ui->fileList->clear();
     setWindowTitle(QStringLiteral("MainWindow"));
 }
 
-//列表里只记录本次会话知道文件名，用于重复下载
-void MainWindow::addFileToList(const QString &name)
+//服务器文件列表：整个侧边栏按服务器索引重建
+void MainWindow::onFileListReceived(const QList<RemoteFileInfo> &files)
 {
-    if (name.isEmpty())
-        return;
-    if (!ui->fileList->findItems(name, Qt::MatchExactly).isEmpty())
-        return;
-    ui->fileList->addItem(name);
+    ui->fileList->clear();
+    for (const RemoteFileInfo &info : files) {
+        auto *item = new QListWidgetItem(
+            QStringLiteral("%1  (%2)").arg(info.name, formatBytes(info.size)),
+            ui->fileList);
+        item->setData(Qt::UserRole, info.id);         // 下载时发给服务器的 fileId
+        item->setData(Qt::UserRole + 1, info.name);   // 原始文件名（保存对话框用）
+        item->setToolTip(QStringLiteral("fileId: %1").arg(info.id));
+    }
 }
 
 //处理文本，转为HTML显示

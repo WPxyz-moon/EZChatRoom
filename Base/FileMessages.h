@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <vector>
 
 // FILE_UPLOAD_META / FILE_DOWNLOAD_META 共用
 // 上传：客户端发 META 时 fileId 留 0，服务端在 META_ACK 分配
@@ -47,4 +48,16 @@ struct FileDownloadReq {
 // FILE_DOWNLOAD_DONE: S→C 下载完成
 struct FileDownloadDone {
     uint32_t    fileId = 0;
+};
+
+// FILE_LIST_RESP: S→C 服务器上已完成、可下载的文件列表
+// 列表来自服务器启动时扫描 <fileId>.meta 重建的索引，按 fileId 倒序（新上传的在前）
+struct FileInfo {
+    uint32_t    fileId = 0;
+    std::string name;
+    uint64_t    size = 0;
+};
+
+struct FileListResp {
+    std::vector<FileInfo> files;
 };
