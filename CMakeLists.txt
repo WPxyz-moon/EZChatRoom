@@ -23,15 +23,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 
 add_executable(ezChatRoom
-    ${CMAKE_SOURCE_DIR}/ChatRoom/main.cc
+    ${CMAKE_SOURCE_DIR}/ChatRoom/ServerMain.cpp
     ${CMAKE_SOURCE_DIR}/Base/codec.cpp
     ${CMAKE_SOURCE_DIR}/Base/Md5.cpp
-    ${CMAKE_SOURCE_DIR}/ChatRoom/ChatRoom.cc
-    ${CMAKE_SOURCE_DIR}/ChatRoom/FileManager.cc
-    ${CMAKE_SOURCE_DIR}/Reactor/Acceptor.cc
-    ${CMAKE_SOURCE_DIR}/Reactor/Connection.cc
-    ${CMAKE_SOURCE_DIR}/Reactor/EventLoop.cc
-    ${CMAKE_SOURCE_DIR}/Reactor/KeyBoardHandler.cc
+    ${CMAKE_SOURCE_DIR}/ChatRoom/ChatRoom.cpp
+    ${CMAKE_SOURCE_DIR}/ChatRoom/FileManager.cpp
+    ${CMAKE_SOURCE_DIR}/Reactor/Acceptor.cpp
+    ${CMAKE_SOURCE_DIR}/Reactor/Connection.cpp
+    ${CMAKE_SOURCE_DIR}/Reactor/EventLoop.cpp
+    ${CMAKE_SOURCE_DIR}/Reactor/KeyBoardHandler.cpp
 )
 target_include_directories(ezChatRoom PRIVATE 
                         ${CMAKE_SOURCE_DIR}/ChatRoom 
