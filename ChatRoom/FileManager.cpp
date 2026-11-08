@@ -18,6 +18,10 @@
 
 using namespace codec;
 
+// static constexpr 成员被 std::min 按引用绑定（ODR-use）时，老标准 / 未开启
+// C++17 inline variable 的工具链需要类外定义，否则链接报未定义引用。
+constexpr size_t FileManager::MAX_LIST_ITEMS;
+
 namespace {
 
 bool isAllDigits(const std::string& s) {
